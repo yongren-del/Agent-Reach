@@ -51,9 +51,15 @@ jobs:
           sudo apt-get install -y curl jq postgresql-client
 
       - name: Install backend dependencies
-        if: steps.detect-assets.outputs.has_backend_lock == 'true'
-        working-directory: swarm-ide-chore-specs-mvp/backend
-        run: npm ci
+        run: |
+          if [ -f "swarm-ide-chore-specs-mvp/backend/package-lock.json" ]; then
+            echo "INSTALL_BACKEND_MODE=npm-ci"
+            cd swarm-ide-chore-specs-mvp/backend
+            npm ci
+          else
+            echo "INSTALL_BACKEND_MODE=degraded-missing-path"
+            echo "backend lockfile not found; skip npm ci in fork-compatible mode"
+          fi
 
       - name: Wait for PostgreSQL
         run: |
