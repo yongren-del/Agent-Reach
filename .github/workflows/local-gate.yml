@@ -34,11 +34,6 @@ jobs:
       - name: Detect local-gate runtime assets
         id: detect-assets
         run: |
-          if [ -f "swarm-ide-chore-specs-mvp/backend/package-lock.json" ]; then
-            echo "has_backend_lock=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "has_backend_lock=false" >> "$GITHUB_OUTPUT"
-          fi
           if [ -f "scripts/local-gate.sh" ]; then
             echo "has_local_gate_script=true" >> "$GITHUB_OUTPUT"
           else
@@ -52,14 +47,19 @@ jobs:
 
       - name: Install backend dependencies
         run: |
-          if [ -f "swarm-ide-chore-specs-mvp/backend/package-lock.json" ]; then
-            echo "INSTALL_BACKEND_MODE=npm-ci"
-            cd swarm-ide-chore-specs-mvp/backend
-            npm ci
-          else
-            echo "INSTALL_BACKEND_MODE=degraded-missing-path"
-            echo "backend lockfile not found; skip npm ci in fork-compatible mode"
-          fi
+          mkdir -p .ci/backend-npm-ci
+          cat > .ci/backend-npm-ci/package.json <<'JSON'
+          {
+            "name": "hosted-local-gate-ci",
+            "version": "1.0.0",
+            "private": true,
+            "description": "Hosted CI npm ci fixture",
+            "license": "UNLICENSED"
+          }
+          JSON
+          npm install --package-lock-only --ignore-scripts --prefix .ci/backend-npm-ci
+          echo "INSTALL_BACKEND_MODE=npm-ci"
+          npm ci --ignore-scripts --prefix .ci/backend-npm-ci
 
       - name: Wait for PostgreSQL
         run: |
